@@ -1,0 +1,19 @@
+macresview 0.0.1
+================
+
+What is it?
+***********
+	A simple tool to extract data from Mac resource forks. After two years of being used as a very hacky tool, LordHoto nudged me into releasing it for public consumption.
+
+How do I build it?
+******************
+	1) Type 'make'
+	2) If that doesn't work, submit a pull request that fixes it
+
+How do I use it?
+****************
+	From the command line! Run "./macresview" to see what options are available.
+
+What can it do?
+***************
+	Currently, there are only three things it can do: it can list resources, do a raw dump of resources, and extract PICT/snd files. Note: Only snd files that are raw PCM are supported.
