@@ -46,7 +46,7 @@ std::string addExtension(std::string fileName, const std::string &extension) {
 	if (fileName.size() > 4 && !memcmp(&fileName[fileName.size() - 4], ".dat", 4))
 		fileName = std::string(fileName.c_str(), fileName.size() - 4);
 
-	if (fileName.size() > extension.size() && compareStringIgnoreCase(&fileName[fileName.size() - extension.size()], extension.c_str()))
+	if (fileName.size() <= extension.size() || (fileName.size() > extension.size() && compareStringIgnoreCase(&fileName[fileName.size() - extension.size()], extension.c_str())))
 		fileName += extension;
 
 	return fileName;
