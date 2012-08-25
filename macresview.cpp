@@ -52,11 +52,11 @@ std::string addExtension(std::string fileName, const std::string &extension) {
 	return fileName;
 }
 
-bool outputDataPair(DataPair *pair, const char *filename) {
-	if (!pair || !filename)
+bool outputDataPair(DataPair *pair, const std::string &fileName) {
+	if (!pair || fileName.empty())
 		return false;
 
-	FILE *output = fopen(filename, "wb");
+	FILE *output = fopen(fileName.c_str(), "wb");
 
 	if (!output)
 		return false;
@@ -188,6 +188,10 @@ void doMode(ResourceFork &resFork, const char *modeDesc) {
 				} else if (typeList[i] == 'snd ') {
 					DataPair *pair = resFork.getResource(typeList[i], idList[j]);
 					outputMacSnd(pair, resFork.createOutputFilename(typeList[i], idList[j]));
+					delete pair;
+				} else if (typeList[i] == 'JPEG') {
+					DataPair *pair = resFork.getResource(typeList[i], idList[j]);
+					outputDataPair(pair, addExtension(resFork.createOutputFilename(typeList[i], idList[j]), ".jpg"));
 					delete pair;
 				}
 			} else {
