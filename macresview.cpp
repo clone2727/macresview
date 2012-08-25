@@ -183,11 +183,11 @@ void doMode(ResourceFork &resFork, const char *modeDesc) {
 			} else if (mode == kRunModeConvert) {
 				if (typeList[i] == 'PICT') {
 					DataPair *pair = resFork.getResource(typeList[i], idList[j]);
-					outputPICT(pair, resFork.getFilename(typeList[i], idList[j]));
+					outputPICT(pair, resFork.createOutputFilename(typeList[i], idList[j]));
 					delete pair;
 				} else if (typeList[i] == 'snd ') {
 					DataPair *pair = resFork.getResource(typeList[i], idList[j]);
-					outputMacSnd(pair, resFork.getFilename(typeList[i], idList[j]));
+					outputMacSnd(pair, resFork.createOutputFilename(typeList[i], idList[j]));
 					delete pair;
 				}
 			} else {
