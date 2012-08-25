@@ -181,7 +181,9 @@ void doMode(ResourceFork &resFork, const char *modeDesc) {
 
 				printf("\n");
 			} else if (mode == kRunModeConvert) {
-				if (typeList[i] == 'PICT') {
+				if (typeList[i] == 'PICT' || typeList[i] == 'j3rs' || typeList[i] == 'IBIN' || typeList[i] == 'IBIS') {
+					// 'j3rs' is PICT in Legacy of Time
+					// 'IBIN' and 'IBIS' are PICT in various SCI games
 					DataPair *pair = resFork.getResource(typeList[i], idList[j]);
 					outputPICT(pair, resFork.createOutputFilename(typeList[i], idList[j]));
 					delete pair;
