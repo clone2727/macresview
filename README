@@ -16,4 +16,4 @@ How do I use it?
 
 What can it do?
 ***************
-	Currently, there are only three things it can do: it can list resources, do a raw dump of resources, and extract PICT/snd files. Note: Only snd files that are raw PCM are supported.
+	Currently, there are only three things it can do: it can list resources, do a raw dump of resources, and extract PICT/snd files. Note: Only snd files that are raw PCM are supported. It also can extract icons to .icns files.

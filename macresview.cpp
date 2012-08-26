@@ -21,6 +21,7 @@
  */
 
 #include <assert.h>
+#include <map>
 
 #include "macresfork.h"
 
@@ -157,6 +158,97 @@ bool outputMacSnd(DataPair *data, std::string fileName) {
 	return true;
 }
 
+struct IconInfo {
+	uint32 tag;
+	DataPair *data;
+};
+
+typedef std::vector<IconInfo> IconList;
+typedef std::map<uint16, IconList> IconMap;
+
+bool outputIcons(ResourceFork &resFork) {
+	IconMap icons;
+
+	std::vector<uint32> typeList = resFork.getTagArray();
+
+	for (uint32 i = 0; i < typeList.size(); i++) {
+		// Known types of icons
+		switch (typeList[i]) {
+		case 'ICON':
+		case 'ICN#':
+		case 'icm#':
+		case 'icm4':
+		case 'icm8':
+		case 'ics#':
+		case 'ics4':
+		case 'ics8':
+		case 'is32':
+		case 's8mk':
+		case 'icl4':
+		case 'icl8':
+		case 'il32':
+		case 'l8mk':
+		case 'ich#':
+		case 'ich4':
+		case 'ich8':
+		case 'ih32':
+		case 'h8mk':
+		case 'it32':
+		case 't8mk':
+			break;
+		default:
+			continue;
+		}
+
+		std::vector<uint16> idList = resFork.getIDArray(typeList[i]);
+
+		for (uint32 j = 0; j < idList.size(); j++) {
+			IconInfo info;
+			info.tag = typeList[i];
+			info.data = resFork.getResource(typeList[i], idList[j]);
+
+			if (info.data->length != 0)
+				icons[idList[j]].push_back(info);
+		}
+	}
+
+	if (icons.empty())
+		return false;
+
+	for (IconMap::iterator it = icons.begin(); it != icons.end(); it++) {
+		char name[11];
+		sprintf(name, "%d.icns", it->first);
+
+		FILE *output = fopen(name, "wb");
+		if (!output) {
+			fprintf(stderr, "Failed to open '%s' for writing\n", name);
+			return false;
+		}
+
+		IconList &list = it->second;
+
+		uint32 totalSize = 8;
+		for (IconList::const_iterator it = list.begin(); it != list.end(); it++)
+			totalSize += it->data->length + 8;
+
+		writeUint32BE(output, 'icns');
+		writeUint32BE(output, totalSize);
+
+		for (IconList::iterator it = list.begin(); it != list.end(); it++) {
+			IconInfo &info = *it;
+			writeUint32BE(output, info.tag);
+			writeUint32BE(output, info.data->length + 8);
+			fwrite(info.data->data, 1, info.data->length, output);
+			delete info.data;
+		}
+
+		fflush(output);
+		fclose(output);
+	}
+
+	return true;
+}
+
 void doMode(ResourceFork &resFork, const char *modeDesc) {
 	RunMode mode = parseMode(modeDesc);
 
@@ -204,6 +296,9 @@ void doMode(ResourceFork &resFork, const char *modeDesc) {
 		}
 	}
 
+	if (mode == kRunModeConvert)
+		outputIcons(resFork);
+
 	printf("\nAll done!\n");
 }
 
@@ -217,7 +312,8 @@ void printUsage(const char *appName) {
 	printf("\tconvert\t\t\tConvert all known resources types in the\n\t\t\t\tresource fork.\n");
 	printf("\n");
 	printf("Currently, the 'convert' mode will dump any PICT resource as a proper PICT file\n");
-	printf("and dumps snd resources as wave files.\n");
+	printf("and dumps snd resources as wave files. It also relabels JPEG files and can\n");
+	printf("dump out icons into .icns files.\n");
 }
 
 #define MACRESVIEW_VERSION "0.0.1"
