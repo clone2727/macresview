@@ -40,7 +40,38 @@ RunMode parseMode(const char *modeDesc) {
 	else if (!strcmp(modeDesc, "convert"))
 		return kRunModeConvert;
 
+	fprintf(stderr, "Unknown mode '%s'\n", modeDesc);
 	return kRunModeUnk;
+}
+
+struct OptionSet {
+	RunMode mode;
+	const char *inputName;
+
+	bool useFileNames;
+};
+
+OptionSet parseOptions(int argc, const char **argv) {
+	OptionSet options;
+	options.mode = parseMode(argv[1]);
+	options.inputName = argv[argc - 1];
+	options.useFileNames = false;
+
+	if (argc > 3) {
+		int optionCount = argc - 3;
+		const char **optionStrings = argv + 2;
+
+		while (optionCount--) {
+			if (!strcmp(*optionStrings, "--use-file-names"))
+				options.useFileNames = true;
+			else
+				fprintf(stderr, "Unknown option '%s'", *optionStrings);
+
+			optionStrings++;
+		}
+	}
+
+	return options;
 }
 
 std::string addExtension(std::string fileName, const std::string &extension) {
@@ -216,8 +247,8 @@ bool outputIcons(ResourceFork &resFork) {
 		return false;
 
 	for (IconMap::iterator it = icons.begin(); it != icons.end(); it++) {
-		char name[11];
-		sprintf(name, "%d.icns", it->first);
+		char name[10];
+		sprintf(name, "%04x.icns", it->first);
 
 		FILE *output = fopen(name, "wb");
 		if (!output) {
@@ -249,13 +280,9 @@ bool outputIcons(ResourceFork &resFork) {
 	return true;
 }
 
-void doMode(ResourceFork &resFork, const char *modeDesc) {
-	RunMode mode = parseMode(modeDesc);
-
-	if (mode == kRunModeUnk) {
-		fprintf(stderr, "Unknown mode '%s'", modeDesc);
+void doMode(ResourceFork &resFork, const OptionSet &options) {
+	if (options.mode == kRunModeUnk)
 		return;
-	}
 
 	std::vector<uint32> typeList = resFork.getTagArray();
 
@@ -263,7 +290,7 @@ void doMode(ResourceFork &resFork, const char *modeDesc) {
 		std::vector<uint16> idList = resFork.getIDArray(typeList[i]);
 		
 		for (uint32 j = 0; j < idList.size(); j++) {
-			if (mode == kRunModeList) {
+			if (options.mode == kRunModeList) {
 				printf("%c%c%c%c %04x", typeList[i] >> 24, (typeList[i] >> 16) & 0xff, (typeList[i] >> 8) & 0xff, typeList[i] & 0xff, idList[j]);
 
 				std::string filename = resFork.getFilename(typeList[i], idList[j]);
@@ -272,38 +299,38 @@ void doMode(ResourceFork &resFork, const char *modeDesc) {
 					printf(" - %s", filename.c_str());
 
 				printf("\n");
-			} else if (mode == kRunModeConvert) {
+			} else if (options.mode == kRunModeConvert) {
 				if (typeList[i] == 'PICT' || typeList[i] == 'j3rs' || typeList[i] == 'IBIN' || typeList[i] == 'IBIS') {
 					// 'j3rs' is PICT in Legacy of Time
 					// 'IBIN' and 'IBIS' are PICT in various SCI games
 					DataPair *pair = resFork.getResource(typeList[i], idList[j]);
-					outputPICT(pair, resFork.createOutputFilename(typeList[i], idList[j]));
+					outputPICT(pair, resFork.createOutputFilename(options.useFileNames, typeList[i], idList[j]));
 					delete pair;
 				} else if (typeList[i] == 'snd ') {
 					DataPair *pair = resFork.getResource(typeList[i], idList[j]);
-					outputMacSnd(pair, resFork.createOutputFilename(typeList[i], idList[j]));
+					outputMacSnd(pair, resFork.createOutputFilename(options.useFileNames, typeList[i], idList[j]));
 					delete pair;
 				} else if (typeList[i] == 'JPEG') {
 					DataPair *pair = resFork.getResource(typeList[i], idList[j]);
-					outputDataPair(pair, addExtension(resFork.createOutputFilename(typeList[i], idList[j]), ".jpg"));
+					outputDataPair(pair, addExtension(resFork.createOutputFilename(options.useFileNames, typeList[i], idList[j]), ".jpg"));
 					delete pair;
 				}
 			} else {
 				DataPair *pair = resFork.getResource(typeList[i], idList[j]);
-				outputDataPair(pair, resFork.createOutputFilename(typeList[i], idList[j]));
+				outputDataPair(pair, resFork.createOutputFilename(options.useFileNames, typeList[i], idList[j]));
 				delete pair;
 			}
 		}
 	}
 
-	if (mode == kRunModeConvert)
+	if (options.mode == kRunModeConvert)
 		outputIcons(resFork);
 
 	printf("\nAll done!\n");
 }
 
 void printUsage(const char *appName) {
-	printf("Usage: %s <mode> <file name>\n", appName);
+	printf("Usage: %s <mode> [<options>] <file name>\n", appName);
 	printf("\n");
 	printf("Valid Modes:\n");
 	printf("================================================================================\n");
@@ -314,6 +341,10 @@ void printUsage(const char *appName) {
 	printf("Currently, the 'convert' mode will dump any PICT resource as a proper PICT file\n");
 	printf("and dumps snd resources as wave files. It also relabels JPEG files and can\n");
 	printf("dump out icons into .icns files.\n");
+	printf("\n");
+	printf("Options:\n");
+	printf("================================================================================\n");
+	printf("\t--use-file-names\tAttempt to use the built-in file names for\n\t\t\t\tresources for output.\n");
 }
 
 #define MACRESVIEW_VERSION "0.0.1"
@@ -329,13 +360,18 @@ int main(int argc, const char **argv) {
 		printUsage(argv[0]);
 		return 0;
 	}
-	
+
+	OptionSet options = parseOptions(argc, argv);
+
+	if (options.mode == kRunModeUnk)
+		return -1;
+
 	ResourceFork resFork;
-	if (!resFork.load(argv[2])) {
-		printf("Failed to open file '%s'\n", argv[2]);
+	if (!resFork.load(options.inputName)) {
+		printf("Failed to open file '%s'\n", options.inputName);
 		return -1;
 	}
 
-	doMode(resFork, argv[1]);
+	doMode(resFork, options);
 	return 0;
 }

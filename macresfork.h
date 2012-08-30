@@ -65,7 +65,7 @@ public:
 	DataPair *getResource(uint32 tag, const std::string &filename);
 
 	std::string getFilename(uint32 tag, uint16 id);
-	const char *createOutputFilename(uint32 tag, uint16 id);
+	const char *createOutputFilename(bool useInternalName, uint32 tag, uint16 id);
 
 	std::vector<uint32> getTagArray();
 	std::vector<uint16> getIDArray(uint32 tag);

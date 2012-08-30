@@ -294,14 +294,14 @@ std::string ResourceFork::getFilename(uint32 tag, uint16 id) {
 	return "";
 }
 
-const char *ResourceFork::createOutputFilename(uint32 tag, uint16 id) {
+const char *ResourceFork::createOutputFilename(bool useInternalName, uint32 tag, uint16 id) {
 	std::string actualName = getFilename(tag, id);
 
-	if (!actualName.empty())
+	if (useInternalName && !actualName.empty())
 		return actualName.c_str();
 
-	static char filename[12];
-	sprintf(filename, "%c%c%c%c_%02d.dat", tag >> 24, (tag >> 16) & 0xff, (tag >> 8) & 0xff, tag & 0xff, id);
+	static char filename[14];
+	sprintf(filename, "%c%c%c%c_%04x.dat", tag >> 24, (tag >> 16) & 0xff, (tag >> 8) & 0xff, tag & 0xff, id);
 
 	return filename;
 }
