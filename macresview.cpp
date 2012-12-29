@@ -314,6 +314,10 @@ void doMode(ResourceFork &resFork, const OptionSet &options) {
 					DataPair *pair = resFork.getResource(typeList[i], idList[j]);
 					outputDataPair(pair, addExtension(resFork.createOutputFilename(options.useFileNames, typeList[i], idList[j]), ".jpg"));
 					delete pair;
+				} else if (typeList[i] == 'icns') {
+					DataPair *pair = resFork.getResource(typeList[i], idList[j]);
+					outputDataPair(pair, addExtension(resFork.createOutputFilename(options.useFileNames, typeList[i], idList[j]), ".icns"));
+					delete pair;
 				}
 			} else {
 				DataPair *pair = resFork.getResource(typeList[i], idList[j]);
