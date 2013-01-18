@@ -22,6 +22,7 @@
 
 #include <assert.h>
 #include <map>
+#include <string.h>
 
 #include "macresfork.h"
 
